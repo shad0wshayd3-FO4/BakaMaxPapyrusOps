@@ -99,7 +99,10 @@ extern "C" DLLEXPORT bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadInterface* a_F
 	F4SE::AllocTrampoline(1 << 6);
 
 	MaxPapyrusOpsPerFrame::Update(*Settings::Tweaks::MaxPapyrusOpsPerFrame);
-	MaxPapyrusOpsPerFrame::Install();
+	if (*Settings::Tweaks::MaxPapyrusOpsPerFrame > 0)
+	{
+		MaxPapyrusOpsPerFrame::Install();
+	}
 
 	return true;
 }
