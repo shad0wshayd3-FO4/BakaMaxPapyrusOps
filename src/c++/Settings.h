@@ -14,6 +14,11 @@ namespace Settings
 		inline bSetting EnableDebugLogging{ "General"s, "EnableDebugLogging"s, false };
 	}
 
+	namespace Fixes
+	{
+		inline bSetting FixScriptPageAllocation{ "Tweaks"s, "FixScriptPageAllocation"s, true, true };
+	}
+
 	namespace Tweaks
 	{
 		inline iSetting MaxPapyrusOpsPerFrame{ "Tweaks"s, "MaxPapyrusOpsPerFrame"s, 100, true };

@@ -1,43 +1,86 @@
-class MaxPapyrusOpsPerFrame
+class Fixes
 {
 public:
-	static void Install()
+	class NegativeScriptPageAllocFix
 	{
-		struct PapyrusOpsPerFrame : Xbyak::CodeGenerator
+	public:
+		static void Install()
 		{
-			PapyrusOpsPerFrame(std::uintptr_t a_begin, std::uintptr_t a_end)
+			static REL::Relocation<std::uintptr_t> target{ RE::BSScript::SimpleAllocMemoryPagePolicy::VTABLE[0] };
+			_GetLargestAvailablePage = target.write_vfunc(0x04, GetLargestAvailablePage);
+		}
+
+	private:
+		static RE::BSScript::SimpleAllocMemoryPagePolicy::AllocationStatus GetLargestAvailablePage(
+			RE::BSScript::SimpleAllocMemoryPagePolicy* a_this,
+			RE::BSTSmartPointer<RE::BSScript::MemoryPage, RE::BSTSmartPointerAutoPtr>& a_newPage)
+		{
+			const RE::BSAutoLock lock{ a_this->dataLock };
+
+			auto maxPageSize = a_this->maxAllocatedMemory - a_this->currentMemorySize;
+			auto currentMemorySize = a_this->currentMemorySize;
+			if (maxPageSize < 0)
 			{
-				inc(r14d);
-				cmp(r14d, MaxOpsPerFrame);
-				jp("Loop");
-				mov(rcx, a_end);
-				jmp(rcx);
-				L("Loop");
-				mov(rcx, a_begin);
-				jmp(rcx);
+				a_this->currentMemorySize = a_this->maxAllocatedMemory;
 			}
-		};
 
-		REL::Relocation<std::uintptr_t> target{ REL::ID(614585), 0x4F0 };
-		REL::Relocation<std::uintptr_t> loopBeg{ REL::ID(614585), 0x0A0 };
-		REL::Relocation<std::uintptr_t> loopEnd{ REL::ID(614585), 0x4FD };
+			auto result = _GetLargestAvailablePage(a_this, a_newPage);
+			if (maxPageSize < 0)
+			{
+				a_this->currentMemorySize = currentMemorySize;
+			}
 
-		auto code = PapyrusOpsPerFrame(loopBeg.address(), loopEnd.address());
-		REL::safe_fill(target.address(), REL::NOP, 0x0D);
+			return result;
+		}
 
-		auto& trampoline = F4SE::GetTrampoline();
-		auto result = trampoline.allocate(code);
-		trampoline.write_branch<5>(target.address(), reinterpret_cast<std::uintptr_t>(result));
-	}
+		inline static REL::Relocation<decltype(&GetLargestAvailablePage)> _GetLargestAvailablePage;
+	};
+};
 
-	template<typename T>
-	static void Update(T a_value)
+class Tweaks
+{
+public:
+	class MaxPapyrusOpsPerFrame
 	{
-		MaxOpsPerFrame = static_cast<std::int32_t>(a_value);
-	}
+	public:
+		static void Install()
+		{
+			struct PapyrusOpsPerFrame : Xbyak::CodeGenerator
+			{
+				PapyrusOpsPerFrame(std::uintptr_t a_begin, std::uintptr_t a_end)
+				{
+					inc(r14d);
+					cmp(r14d, MaxOpsPerFrame);
+					jp("Loop");
+					mov(rcx, a_end);
+					jmp(rcx);
+					L("Loop");
+					mov(rcx, a_begin);
+					jmp(rcx);
+				}
+			};
 
-private:
-	inline static std::int32_t MaxOpsPerFrame{ 100 };
+			REL::Relocation<std::uintptr_t> target{ REL::ID(614585), 0x4F0 };
+			REL::Relocation<std::uintptr_t> loopBeg{ REL::ID(614585), 0x0A0 };
+			REL::Relocation<std::uintptr_t> loopEnd{ REL::ID(614585), 0x4FD };
+
+			auto code = PapyrusOpsPerFrame(loopBeg.address(), loopEnd.address());
+			REL::safe_fill(target.address(), REL::NOP, 0x0D);
+
+			auto& trampoline = F4SE::GetTrampoline();
+			auto result = trampoline.allocate(code);
+			trampoline.write_branch<5>(target.address(), reinterpret_cast<std::uintptr_t>(result));
+		}
+
+		template<typename T>
+		static void Update(T a_value)
+		{
+			MaxOpsPerFrame = static_cast<std::int32_t>(a_value);
+		}
+
+	private:
+		inline static std::int32_t MaxOpsPerFrame{ 100 };
+	};
 };
 
 namespace
@@ -98,10 +141,15 @@ extern "C" DLLEXPORT bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadInterface* a_F
 	F4SE::Init(a_F4SE);
 	F4SE::AllocTrampoline(1 << 6);
 
-	MaxPapyrusOpsPerFrame::Update(*Settings::Tweaks::MaxPapyrusOpsPerFrame);
+	if (*Settings::Fixes::FixScriptPageAllocation)
+	{
+		Fixes::NegativeScriptPageAllocFix::Install();
+	}
+
 	if (*Settings::Tweaks::MaxPapyrusOpsPerFrame > 0)
 	{
-		MaxPapyrusOpsPerFrame::Install();
+		Tweaks::MaxPapyrusOpsPerFrame::Update(*Settings::Tweaks::MaxPapyrusOpsPerFrame);
+		Tweaks::MaxPapyrusOpsPerFrame::Install();
 	}
 
 	return true;

@@ -2,6 +2,10 @@
 # Enable Debug message output
 EnableDebugLogging = false
 
+[Fixes]
+# Fix unintentionally allocating script pages when getting largest available page, but out of memory.
+FixScriptPageAllocation = true
+
 [Tweaks]
 # Maximum papyrus operations per frame. Higher number means better script performance on average
 # Has a very minor impact on framerate, and varies from script to script. (Default: 500, Vanilla value: 100). Recommended Range: 100-2000.
