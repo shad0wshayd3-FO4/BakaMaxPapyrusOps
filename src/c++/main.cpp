@@ -1,7 +1,7 @@
 class Fixes
 {
 public:
-	class NegativeScriptPageAllocFix
+	class FixScriptPageAllocation
 	{
 	public:
 		static void Install()
@@ -34,6 +34,76 @@ public:
 		}
 
 		inline static REL::Relocation<decltype(&GetLargestAvailablePage)> _GetLargestAvailablePage;
+	};
+
+	class FixToggleScriptsCommand
+	{
+	public:
+		static void Install()
+		{
+			{
+				static REL::Relocation<std::uintptr_t> target{ REL::ID(1321787), 0x5A };
+				auto& trampoline = F4SE::GetTrampoline();
+				trampoline.write_call<5>(target.address(), EndSaveLoad);
+			}
+
+			{
+				static REL::Relocation<std::uintptr_t> target{ REL::ID(1014572), 0x5CF };
+				auto& trampoline = F4SE::GetTrampoline();
+				trampoline.write_call<5>(target.address(), EndSaveLoad);
+			}
+
+			{
+				static REL::Relocation<std::uintptr_t> target{ REL::ID(124452), 0x32F };
+				auto& trampoline = F4SE::GetTrampoline();
+				trampoline.write_call<5>(target.address(), EndSaveLoad);
+			}
+
+			{
+				static REL::Relocation<std::uintptr_t> target{ REL::ID(371005), 0x478 };
+				auto& trampoline = F4SE::GetTrampoline();
+				trampoline.write_call<5>(target.address(), EndSaveLoad);
+			}
+
+			{
+				static REL::Relocation<std::uintptr_t> target{ REL::ID(1238017), 0x370 };
+				auto& trampoline = F4SE::GetTrampoline();
+				_Freeze = trampoline.write_call<5>(target.address(), Freeze);
+			}
+		}
+
+	private:
+		static void EndSaveLoad(RE::GameVM* a_this)
+		{
+			if (a_this->saveLoadInterface)
+			{
+				a_this->saveLoadInterface->CleanupLoad();
+				a_this->saveLoadInterface->CleanupSave();
+			}
+
+			a_this->RegisterForAllGameEvents();
+			a_this->saveLoad = false;
+
+			a_this->handlePolicy.DropSaveLoadRemapData();
+			a_this->objectBindPolicy.EndSaveLoad();
+			a_this->handlePolicy.UpdatePersistence();
+
+			if (RE::Script::GetProcessScripts())
+			{
+				const RE::BSAutoLock lock{ a_this->freezeLock };
+				a_this->frozen = false;
+			}
+		}
+
+		static void Freeze(RE::GameVM* a_this, bool a_freeze)
+		{
+			if (RE::Script::GetProcessScripts())
+			{
+				return _Freeze(a_this, a_freeze);
+			}
+		}
+
+		inline static REL::Relocation<decltype(&Freeze)> _Freeze;
 	};
 };
 
@@ -139,11 +209,16 @@ extern "C" DLLEXPORT bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadInterface* a_F
 	logger::debug("Debug logging enabled."sv);
 
 	F4SE::Init(a_F4SE);
-	F4SE::AllocTrampoline(1 << 6);
+	F4SE::AllocTrampoline(1 << 7);
 
 	if (*Settings::Fixes::FixScriptPageAllocation)
 	{
-		Fixes::NegativeScriptPageAllocFix::Install();
+		Fixes::FixScriptPageAllocation::Install();
+	}
+
+	if (*Settings::Fixes::FixToggleScriptsCommand)
+	{
+		Fixes::FixToggleScriptsCommand::Install();
 	}
 
 	if (*Settings::Tweaks::MaxPapyrusOpsPerFrame > 0)

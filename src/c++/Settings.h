@@ -16,6 +16,7 @@ namespace Settings
 
 	namespace Fixes
 	{
+		inline bSetting FixToggleScriptsCommand{ "Tweaks"s, "FixToggleScriptsCommand"s, true, true };
 		inline bSetting FixScriptPageAllocation{ "Tweaks"s, "FixScriptPageAllocation"s, true, true };
 	}
 

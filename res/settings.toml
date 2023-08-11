@@ -6,6 +6,10 @@ EnableDebugLogging = false
 # Fix unintentionally allocating script pages when getting largest available page, but out of memory.
 FixScriptPageAllocation = true
 
+# Fixes ToggleScripts command not persisting when saving/stack dumping
+# Scripts will now stay turned off when toggled off, and on when toggled on.
+FixToggleScriptsCommand = true
+
 [Tweaks]
 # Maximum papyrus operations per frame. Higher number means better script performance on average
 # Has a very minor impact on framerate, and varies from script to script. (Default: 500, Vanilla value: 100). Recommended Range: 100-2000.
