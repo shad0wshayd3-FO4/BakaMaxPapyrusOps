@@ -121,7 +121,7 @@ public:
 				{
 					inc(r14d);
 					cmp(r14d, MaxOpsPerFrame);
-					jp("Loop");
+					jb("Loop");
 					mov(rcx, a_end);
 					jmp(rcx);
 					L("Loop");
