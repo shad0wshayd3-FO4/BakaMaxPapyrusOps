@@ -29,11 +29,13 @@ class Fixes
 public:
 	static void Install()
 	{
-		if (*Config::Fixes::bFixScriptPageAllocation) {
+		if (*Config::Fixes::bFixScriptPageAllocation)
+		{
 			FixScriptPageAllocation::Install();
 		}
 
-		if (*Config::Fixes::bFixToggleScriptsCommand) {
+		if (*Config::Fixes::bFixToggleScriptsCommand)
+		{
 			FixToggleScriptsCommand::Install();
 		}
 	}
@@ -185,7 +187,8 @@ class Tweaks
 public:
 	static void Install()
 	{
-		if (*Config::Tweaks::iMaxPapyrusOpsPerFrame > 0) {
+		if (*Config::Tweaks::iMaxPapyrusOpsPerFrame > 0)
+		{
 			MaxPapyrusOpsPerFrame::Update(*Config::Tweaks::iMaxPapyrusOpsPerFrame);
 			MaxPapyrusOpsPerFrame::Install();
 		}
@@ -225,7 +228,7 @@ private:
 			trampoline.write_branch<5>(target.address(), reinterpret_cast<std::uintptr_t>(result));
 		}
 
-		template<typename T>
+		template <typename T>
 		static void Update(T a_value)
 		{
 			MaxOpsPerFrame = static_cast<std::int32_t>(a_value);
