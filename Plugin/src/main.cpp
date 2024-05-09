@@ -132,12 +132,16 @@ private:
 		public:
 			static void Install()
 			{
-				static REL::Relocation<std::uintptr_t> target{ REL::ID(2251339), 0x797 };
-				auto& trampoline = F4SE::GetTrampoline();
-				trampoline.write_call<5>(target.address(), BSSpinLock_Lock);
+				{
+					static REL::Relocation<std::uintptr_t> target{ REL::ID(2251339), 0x797 };
+					auto& trampoline = F4SE::GetTrampoline();
+					trampoline.write_call<5>(target.address(), BSSpinLock_Lock);
+				}
 
-				static REL::Relocation<std::uintptr_t> tgtNOP{ REL::ID(2251339), 0x79C };
-				REL::safe_fill(tgtNOP.address(), REL::NOP, 0x08);
+				{
+					static REL::Relocation<std::uintptr_t> target{ REL::ID(2251339), 0x79C };
+					REL::safe_fill(target.address(), REL::NOP, 0x08);
+				}
 			}
 
 		private:
