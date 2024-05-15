@@ -3,7 +3,6 @@
     "name": "bakamaxpapyrusops",
     "homepage": "https://github.com/shad0wshayd3-FO4/BakaMaxPapyrusOps",
     "dependencies": [
-        "boost-stl-interfaces",
         "nlohmann-json",
         "rsm-mmio",
         "simpleini",
