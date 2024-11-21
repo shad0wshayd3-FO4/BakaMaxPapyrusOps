@@ -1,40 +1,37 @@
-class Config
+namespace Config
 {
-public:
-	class Fixes
+	namespace Fixes
 	{
-	public:
-		inline static DKUtil::Alias::Boolean bFixToggleScriptsCommand{ "bFixToggleScriptsCommand", "Fixes" };
-		inline static DKUtil::Alias::Boolean bFixScriptPageAllocation{ "bFixScriptPageAllocation", "Fixes" };
-	};
+		inline static REX::INI::Bool bFixToggleScriptsCommand{ "Fixes", "bFixToggleScriptsCommand", true };
+		inline static REX::INI::Bool bFixScriptPageAllocation{ "Fixes", "bFixScriptPageAllocation", true };
+	}
 
-	class Tweaks
+	namespace Tweaks
 	{
-	public:
-		inline static DKUtil::Alias::Integer iMaxPapyrusOpsPerFrame{ "iMaxPapyrusOpsPerFrame", "Tweaks" };
-	};
+		inline static REX::INI::I32 iMaxPapyrusOpsPerFrame{ "Tweaks", "iMaxPapyrusOpsPerFrame", 500 };
+	}
 
 	static void Load()
 	{
-		static auto Config = COMPILE_PROXY("BakaMaxPapyrusOps.ini");
-		Config.Bind(Fixes::bFixToggleScriptsCommand, true);
-		Config.Bind(Fixes::bFixScriptPageAllocation, true);
-		Config.Bind(Tweaks::iMaxPapyrusOpsPerFrame, 500);
-		Config.Load();
+		const auto ini = REX::INI::SettingStore::GetSingleton();
+		ini->Init(
+			"Data/F4SE/plugins/BakaMaxPapyrusOps.ini",
+			"Data/F4SE/plugins/BakaMaxPapyrusOpsCustom.ini");
+		ini->Load();
 	}
-};
+}
 
 class Fixes
 {
 public:
 	static void Install()
 	{
-		if (*Config::Fixes::bFixScriptPageAllocation)
+		if (Config::Fixes::bFixScriptPageAllocation.GetValue())
 		{
 			FixScriptPageAllocation::Install();
 		}
 
-		if (*Config::Fixes::bFixToggleScriptsCommand)
+		if (Config::Fixes::bFixToggleScriptsCommand.GetValue())
 		{
 			FixToggleScriptsCommand::Install();
 		}
@@ -191,9 +188,9 @@ class Tweaks
 public:
 	static void Install()
 	{
-		if (*Config::Tweaks::iMaxPapyrusOpsPerFrame > 0)
+		if (Config::Tweaks::iMaxPapyrusOpsPerFrame.GetValue() > 0)
 		{
-			MaxPapyrusOpsPerFrame::Update(*Config::Tweaks::iMaxPapyrusOpsPerFrame);
+			MaxPapyrusOpsPerFrame::Update(Config::Tweaks::iMaxPapyrusOpsPerFrame.GetValue());
 			MaxPapyrusOpsPerFrame::Install();
 		}
 	}
@@ -243,22 +240,32 @@ private:
 	};
 };
 
-DLLEXPORT bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadInterface* a_F4SE)
+namespace
 {
-#ifndef NDEBUG
-	MessageBoxA(NULL, "Loaded. You can now attach the debugger or continue execution.", Plugin::NAME.data(), NULL);
-#endif
+	void MessageCallback(F4SE::MessagingInterface::Message* a_msg)
+	{
+		switch (a_msg->type)
+		{
+		case F4SE::MessagingInterface::kPostLoad:
+		{
+			Fixes::Install();
+			Tweaks::Install();
+			break;
+		}
+		default:
+			break;
+		}
+	}
+}
 
+F4SEPluginLoad(const F4SE::LoadInterface* a_F4SE)
+{
 	F4SE::Init(a_F4SE);
-	F4SE::AllocTrampoline(1 << 8);
-
-	DKUtil::Logger::Init(Plugin::NAME, std::to_string(Plugin::Version));
-	INFO("{} v{} loaded."sv, Plugin::NAME, Plugin::Version);
 
 	Config::Load();
 
-	Fixes::Install();
-	Tweaks::Install();
+	F4SE::AllocTrampoline(1 << 8);
+	F4SE::GetMessagingInterface()->RegisterListener(MessageCallback);
 
 	return true;
 }

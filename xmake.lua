@@ -23,6 +23,10 @@ set_policy("build.optimization.lto", true)
 add_rules("mode.debug", "mode.releasedbg")
 add_rules("plugin.vsxmake.autoupdate")
 
+-- add config
+set_config("f4se_xbyak", true)
+set_config("rex_ini", true)
+
 -- setup targets
 target("BakaMaxPapyrusOps")
     -- bind local dependencies
