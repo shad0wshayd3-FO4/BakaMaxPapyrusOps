@@ -31,3 +31,6 @@ target("BakaMaxPapyrusOps")
 
     -- add extra files
     add_extrafiles(".clang-format")
+
+    -- add install files
+    add_installfiles("res/*.ini", { prefixdir = "F4SE/Plugins" })
